@@ -1,3 +1,73 @@
+{  // icy's point
+    template <typename type>
+    struct gpoint {
+        const ld PI = acos(-1);
+        const ld EPS = 1e-9;
+        ld my_sqrt(type x) const {
+            return (x >= 0 ? sqrtl(x) : 0);
+        }
+        type x, y;
+        gpoint() : x(0), y(0) {}
+        gpoint(type _x, type _y) : x(_x), y(_y) {}
+
+        gpoint operator+(const gpoint &a) const {
+            return {x + a.x, y + a.y};
+        }
+        gpoint operator-(const gpoint &a) const {
+            return {x - a.x, y - a.y};
+        }
+        gpoint operator-() const {
+            return {-x, -y};
+        }
+        gpoint operator*(const type scal) const {
+            return {x * scal, y * scal};
+        }
+        gpoint operator/(const type scal) const {
+            return {x / scal, y / scal};
+        }
+        bool operator==(const gpoint &a) const {
+            return x == a.x && y == a.y;
+        }
+        bool operator!=(const gpoint &a) const {
+            return !((*this) == a);
+        }
+        void operator=(const gpoint &a) {
+            x = a.x;
+            y = a.y;
+        }
+        type scl(const gpoint &a) const {
+            return x * a.x + y * a.y;
+        }
+        type vct(const gpoint &a) const {
+            return x * a.y - y * a.x;
+        }
+        ld polar_angle() const {
+            ld alpha = atan2(y, x);
+            if (alpha < 0) alpha += 2 * PI;
+            return alpha;
+        }
+        ld angle(const gpoint &a) const {
+            ld alpha = atan2((*this).vct(a), (*this).scl(a));
+            if (alpha < 0) alpha += 2 * PI;
+            return alpha;
+        }
+        ld len() const {
+            return my_sqrt(x * x + y * y);
+        }
+        ld len(const gpoint &a) const {
+            return my_sqrt((x - a.x) * (x - a.x) + (y - a.y) * (y - a.y));
+        }
+        void ort() {
+            ld ln = len();
+            x /= ln;
+            y /= ln;
+        }
+    };
+    //
+    using Point = gpoint<ld>;
+    //
+}
+
 const long double pi = acos(-1), eps = 1e-7;
 
 bool check(long double a, long double b) {
