@@ -187,42 +187,55 @@ vector<int> manacher(string s) {
     return vector<int>(begin(res) + 1, end(res) - 1);
 }
 
-vector<int> sort_cyclic_shifts(string const& s) {
+vector<int> suffix_array(string s) {
+    const int ALPHABET_SIZE = 128;
+    s += (char)(0);
     int n = s.size();
-    const int alphabet = 256;
-        vector<int> pn(n), cn(n);
-    for (int h = 0; (1 << h) < n; ++h) {
-        for (int i = 0; i < n; i++) {
-            pn[i] = p[i] - (1 << h);
-            if (pn[i] < 0)
-                pn[i] += n;
-        }
-        fill(cnt.begin(), cnt.begin() + classes, 0);
-        for (int i = 0; i < n; i++)
-            cnt[c[pn[i]]]++;
-        for (int i = 1; i < classes; i++)
-            cnt[i] += cnt[i-1];
-        for (int i = n-1; i >= 0; i--)
-            p[--cnt[c[pn[i]]]] = pn[i];
-        cn[p[0]] = 0;
-        classes = 1;
-        for (int i = 1; i < n; i++) {
-            pair<int, int> cur = {c[p[i]], c[(p[i] + (1 << h)) % n]};
-            pair<int, int> prev = {c[p[i-1]], c[(p[i-1] + (1 << h)) % n]};
-            if (cur != prev)
-                ++classes;
-            cn[p[i]] = classes - 1;
-        }
-        c.swap(cn);
+
+    vector<int> cls(n), p(n);
+    vector<vector<int>> cnt(ALPHABET_SIZE);
+    for (int i = 0; i < n; i++) {
+        cnt[(int)s[i]].push_back(i);
     }
+    int cur_cls_counter = 0;
+    for (int i = 0, j = 0; i < ALPHABET_SIZE; i++) {
+        bool open = false;
+        for (const auto& idx : cnt[i]) {
+            p[j++] = idx;
+            cls[idx] = cur_cls_counter;
+            open = true;
+        }
+        if (open) {
+            cur_cls_counter++;
+        }
+    }
+    cnt.clear();
+    cnt.resize(n);
+    vector<int> next_cls(n);
+    for (int step = 0; (1 << step) <= n; step++) {
+        int d = (1 << step);
+        for (int i = 0; i < n; i++) {
+            int cur = (p[i] - d + n) % n;
+            cnt[cls[cur]].push_back(cur);
+        }
+        int next_cls_counter = 0;
+        for (int i = 0, it = 0; i < cur_cls_counter; i++) {
+            for (int j = 0; j < cnt[i].size(); j++) {
+                if (j == 0 || cls[(cnt[i][j] + d) % n] != cls[(cnt[i][j - 1] + d) % n]) {
+                    next_cls_counter++;
+                }
+                next_cls[cnt[i][j]] = next_cls_counter - 1;
+                p[it++] = cnt[i][j];
+            }
+        }
+        cls.swap(next_cls);
+        cur_cls_counter = next_cls_counter;
+        for (auto& row : cnt) row.clear();
+    }
+    p.erase(p.begin());
     return p;
 }
-vector<int> suffix_array_construction(string s) {
-    s += "$";
-    vector<int> sorted_shifts = sort_cyclic_shifts(s);
-    sorted_shifts.erase(sorted_shifts.begin());
-    return sorted_shifts;
-}
+
 vector<int> lcp_construction(string const& s, vector<int> const& p) {
     int n = s.size();
     vector<int> rank(n, 0);
