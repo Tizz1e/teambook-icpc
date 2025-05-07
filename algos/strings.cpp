@@ -1,4 +1,5 @@
-vector<int> pref_func(string s) {
+template<typename T>
+vector<int> pref_func(const T& s) {
     int n = s.size();
     vector<int> p(n, 0);
     p[0] = 0;
@@ -15,7 +16,8 @@ vector<int> pref_func(string s) {
     return p;
 }
 
-vector<int> z_func(string& s) {
+template<typename T>
+vector<int> z_func(const T& s) {
     int n = s.size();
     vector<int> z(n, 0);
     int l = 0, r = 0;
@@ -189,7 +191,8 @@ vector<int> manacher(string s) {
     return vector<int>(begin(res) + 1, end(res) - 1);
 }
 
-vector<int> suffix_array(const string& s) {
+template<typename T>
+vector<int> suffix_array(const T& s) {
     // it's expected that s already has delimeter in the end
     int n = s.size();
     vector<int> cls(n), p(n);
@@ -240,7 +243,8 @@ vector<int> suffix_array(const string& s) {
     return p;
 }
 
-vector<int> calc_lcp(const string& s, const vector<int>& suffar) {
+template<typename T>
+vector<int> calc_lcp(const T& s, const vector<int>& suffar) {
     int n = s.size();
     vector<int> c(n);
     for (int i = 0; i < n; i++) {
