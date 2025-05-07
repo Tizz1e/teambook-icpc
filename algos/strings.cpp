@@ -32,13 +32,12 @@ vector<int> z_func(string& s) {
     return z;
 }
 
+template <typename T>
 struct Hash {
     ull mod;
     ull base;
     vector<ull> power;
     vector<ull> hash;
-
-    Hash() : mod(1e9 + 7), base(37) {}
 
     Hash(int mod, int base, int n) : mod(mod), base(base) {
         power.resize(n, 1);
@@ -47,12 +46,14 @@ struct Hash {
         }
     }
 
-    Hash(int mod, int base, const string& s) : Hash(mod, base, s.size() + 1) {
+    Hash(int mod, int base, const T& s) : Hash(mod, base, s.size() + 1) {
         hash.resize(s.size() + 1);
         for (int i = 0; i < s.size(); i++) {
-            hash[i + 1] = (hash[i] * base + s[i] - 'a' + 1) % mod;
+            hash[i + 1] = (hash[i] * base + s[i]) % mod;
         }
     }
+
+    Hash(const T& s) : Hash(1e9 + 7, 199, s) {}
 
     ull get_substr(int l, int r) {
         return (hash[r + 1] - hash[l] * power[r - l + 1] % mod + mod) % mod;
@@ -63,10 +64,11 @@ struct Hash {
     }
 };
 
+template<typename T>
 struct BigHash {
-    Hash h1, h2;
+    Hash<T> h1, h2;
 
-    BigHash(const string& s) {
+    BigHash(const T& s) {
         h1 = {(int)1e9 + 7, 37, s};
         h2 = {998'353'244, 61, s};
     }
@@ -166,12 +168,12 @@ vector<int> manacher_odd(string s) {
     s = "$" + s + "^";
     vector<int> p(n + 2);
     int l = 0, r = 1;
-    for(int i = 1; i <= n; i++) {
+    for (int i = 1; i <= n; i++) {
         p[i] = max(0, min(r - i, p[l + (r - i)]));
-        while(s[i - p[i]] == s[i + p[i]]) {
+        while (s[i - p[i]] == s[i + p[i]]) {
             p[i]++;
         }
-        if(i + p[i] > r) {
+        if (i + p[i] > r) {
             l = i - p[i], r = i + p[i];
         }
     }
@@ -180,81 +182,83 @@ vector<int> manacher_odd(string s) {
 
 vector<int> manacher(string s) {
     string t;
-    for(auto c: s) {
+    for (auto c : s) {
         t += string("#") + c;
     }
     auto res = manacher_odd(t + "#");
     return vector<int>(begin(res) + 1, end(res) - 1);
 }
 
-vector<int> suffix_array(string s) {
-    const int ALPHABET_SIZE = 128;
-    s += (char)(0);
+vector<int> suffix_array(const string& s) {
+    // it's expected that s already has delimeter in the end
     int n = s.size();
-
     vector<int> cls(n), p(n);
-    vector<vector<int>> cnt(ALPHABET_SIZE);
+    map<int, vector<int>> mp;
     for (int i = 0; i < n; i++) {
-        cnt[(int)s[i]].push_back(i);
+        mp[s[i]].push_back(i);
     }
     int cur_cls_counter = 0;
-    for (int i = 0, j = 0; i < ALPHABET_SIZE; i++) {
-        bool open = false;
-        for (const auto& idx : cnt[i]) {
-            p[j++] = idx;
-            cls[idx] = cur_cls_counter;
-            open = true;
+    int p_it = 0;
+    for (const auto& [_, row] : mp) {
+        for (const auto& v : row) {
+            cls[v] = cur_cls_counter;
+            p[p_it++] = v;
         }
-        if (open) {
-            cur_cls_counter++;
-        }
+        cur_cls_counter++;
     }
-    cnt.clear();
-    cnt.resize(n);
+
     vector<int> next_cls(n);
-    for (int step = 0; (1 << step) <= n; step++) {
-        int d = (1 << step);
-        for (int i = 0; i < n; i++) {
-            int cur = (p[i] - d + n) % n;
-            cnt[cls[cur]].push_back(cur);
-        }
+    vector<vector<int>> cnt(cur_cls_counter);
+    cnt.reserve(n);
+    for (int l = 1; cur_cls_counter < n; l++) {
+        int d = (1 << l) >> 1;
+        p_it = 0;
         int next_cls_counter = 0;
-        for (int i = 0, it = 0; i < cur_cls_counter; i++) {
+
+        for (int i = 0; i < n; i++) {
+            int k = (p[i] - d + n) % n;
+            cnt[cls[k]].push_back(k);
+        }
+
+        for (int i = 0; i < cur_cls_counter; i++) {
             for (int j = 0; j < cnt[i].size(); j++) {
                 if (j == 0 || cls[(cnt[i][j] + d) % n] != cls[(cnt[i][j - 1] + d) % n]) {
                     next_cls_counter++;
                 }
                 next_cls[cnt[i][j]] = next_cls_counter - 1;
-                p[it++] = cnt[i][j];
+                p[p_it++] = cnt[i][j];
             }
         }
         cls.swap(next_cls);
+        for (int i = 0; i < cur_cls_counter; i++) {
+            cnt[i].clear();
+        }
         cur_cls_counter = next_cls_counter;
-        for (auto& row : cnt) row.clear();
+        cnt.resize(cur_cls_counter);
     }
     p.erase(p.begin());
     return p;
 }
 
-vector<int> lcp_construction(string const& s, vector<int> const& p) {
+vector<int> calc_lcp(const string& s, const vector<int>& suffar) {
     int n = s.size();
-    vector<int> rank(n, 0);
-    for (int i = 0; i < n; i++)
-        rank[p[i]] = i;
-
-    int k = 0;
-    vector<int> lcp(n-1, 0);
+    vector<int> c(n);
     for (int i = 0; i < n; i++) {
-        if (rank[i] == n - 1) {
-            k = 0;
+        c[suffar[i]] = i;
+    }
+    vector<int> lcp(n - 1);
+    int cur_lcp = 0;
+    for (int i = 0; i < n; i++) {
+        if (c[i] == n - 1) {
+            cur_lcp = 0;
             continue;
         }
-        int j = p[rank[i] + 1];
-        while (i + k < n && j + k < n && s[i+k] == s[j+k])
-            k++;
-        lcp[rank[i]] = k;
-        if (k)
-            k--;
+        int j = suffar[c[i] + 1];
+        while (i + cur_lcp < n && j + cur_lcp < n && s[i + cur_lcp] == s[j + cur_lcp]) {
+            cur_lcp++;
+        }
+        lcp[c[i]] = cur_lcp;
+        cur_lcp = std::max(cur_lcp - 1, 0);
     }
     return lcp;
 }
