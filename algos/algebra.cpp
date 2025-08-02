@@ -22,6 +22,6 @@ for (int i=2; i <= N; ++i) {
         lp[i * pr[j]] = pr[j];
         if (pr[j] == lp[i]) {
             break;
-        }t5
+        }
     }
 }
